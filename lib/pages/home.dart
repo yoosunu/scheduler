@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:scheduler/database.dart';
+import 'todo.dart';
+import 'package:intl/intl.dart';
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});
@@ -13,28 +15,33 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   DatabaseHelper dbHelper = DatabaseHelper();
 
+  DateTime? _selectedDate;
+  TimeOfDay? selectedTime;
+
+  final _formKey = GlobalKey<FormState>();
+
+  final TextEditingController _dateController = TextEditingController();
+  final TextEditingController _timeController = TextEditingController();
+
   final ScrollController _scrollController = ScrollController();
-  final PageController _pageController = PageController(viewportFraction: 0.3);
-  int _currentPage = 0;
 
   double _getItemOffset(int index) {
     return index * 120.0; // Item width + margin
   }
 
   @override
-  void initState() {
-    super.initState();
-    _pageController.addListener(() {
-      int page = _pageController.page!.round();
-      if (_currentPage != page) {
-        setState(() {
-          _currentPage = page;
-        });
-      }
-    });
+  void dispose() {
+    _dateController.dispose();
+    _timeController.dispose();
+    super.dispose();
   }
 
-  // List<Map<String, dynamic>> _storedData = [];
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  List<Map<String, dynamic>> _storedData = [];
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -43,11 +50,11 @@ class _MyHomePageState extends State<MyHomePage> {
         title: Text(widget.title),
       ),
       body: Padding(
-        padding: const EdgeInsets.fromLTRB(0, 50, 0, 30),
+        padding: const EdgeInsets.fromLTRB(0, 30, 0, 15),
         child: Column(
           children: <Widget>[
-            Container(
-              height: 150,
+            SizedBox(
+              height: 180,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
                 controller: _scrollController,
@@ -70,7 +77,8 @@ class _MyHomePageState extends State<MyHomePage> {
                           width: 100,
                           height: 100,
                           margin: const EdgeInsets.symmetric(horizontal: 10),
-                          color: scale > 0.9 ? Colors.blue : Colors.grey,
+                          color:
+                              scale > 0.9 ? Colors.blue[300] : Colors.blue[100],
                           child: Center(child: Text('Item $index')),
                         ),
                       );
@@ -79,36 +87,87 @@ class _MyHomePageState extends State<MyHomePage> {
                 },
               ),
             ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(30, 10, 30, 0),
+              child: SizedBox(
+                height: 192,
+                child: Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(10),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          const Icon(Icons.event),
+                          const SizedBox(
+                            width: 30,
+                          ),
+                          Expanded(
+                            child: TextFormField(
+                              decoration: const InputDecoration(
+                                border: UnderlineInputBorder(),
+                                labelText: 'What are you gonna do?',
+                              ),
+                            ),
+                          )
+                        ],
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(10),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          const Icon(Icons.access_time),
+                          const SizedBox(
+                            width: 30,
+                          ),
+                          Expanded(
+                              child: Text(
+                            selectedTime != null
+                                ? selectedTime!.format(context)
+                                : 'When?',
+                          )),
+                          ElevatedButton(
+                            onPressed: () async {
+                              final TimeOfDay? time = await showTimePicker(
+                                  context: context,
+                                  initialTime: selectedTime ?? TimeOfDay.now());
+                              if (time != null) {
+                                setState(() {
+                                  selectedTime = time;
+                                });
+                              }
+                            },
+                            child: const Text('Set Time'),
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(
+                      width: 300,
+                      child: ElevatedButton(
+                        child: const Text('Save'),
+                        onPressed: () {},
+                      ),
+                    )
+                  ],
+                ),
+              ),
+            )
           ],
         ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          showModalBottomSheet<void>(
-            context: context,
-            builder: (BuildContext context) {
-              return Container(
-                height: 600,
-                color: Colors.blue[50],
-                child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      const Text('Modal BottomSheet'),
-                      ElevatedButton(
-                        child: const Text('Close BottomSheet'),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => const toDoPage(title: 'toDo page'),
+            ),
           );
         },
         tooltip: 'Add New',
-        child: const Icon(Icons.add),
+        child: const Icon(Icons.list),
       ),
     );
   }
